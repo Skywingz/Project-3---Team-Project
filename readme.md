@@ -27,5 +27,5 @@ If you have questions about whether or not your work adheres to these guidelines
 * Eric Kivet, James Rondina, Jonathan Taylor - [NYT](NewYorkTimes)
 * Sunil Kumar, Alice Lubic, Anders Palm - [TouchLab](TouchLab)
 * Zachary Arden, James DeLayo, Jane Grissom - [Vice](Vice)
-* Jimmy Choy, Wansang Lim, Raymour Radhakrishnan - [Yelp](Yelp)
+* Jimmy Choy, Wansang Lim, Raymour Radhakrishnan - [Yelp] (Yelp)
 * Jordan Goldberg, Joey Mejias, David Stone - [Yelp](Yelp)
