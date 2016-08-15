@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">YelpQuest</string>
+    <string name="title_activity_main">YelpQuest</string>
+
+    <string name="search_hint">What are you looking for?</string>
+
+</resources>
