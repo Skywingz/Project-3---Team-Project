@@ -31,8 +31,13 @@ public class MainActivity extends AppCompatActivity {
     private ListView mListView;
     private ArrayAdapter<String> mAdapter;
     ArrayList<String> arrayName = new ArrayList<String>();
-    ArrayList<Double> arrayLatitute = new ArrayList<Double>();
-    ArrayList<Double> arrayLongtitute = new ArrayList<>();
+    ArrayList<String> arrayLatitute = new ArrayList<String>();
+    ArrayList<String> arrayLongtitute = new ArrayList<>();
+    ArrayList<String> arraySNtext = new ArrayList<>();
+    ArrayList<String> arraySNimageURL = new ArrayList<>();
+    ArrayList<String> arrayRating_S_URL = new ArrayList<>();
+    ArrayList<String> arrayRating_M_URL = new ArrayList<>();
+    ArrayList<String> arrayAddress = new ArrayList<>();
     ArrayList<String> arrayAll = new ArrayList<>();
 
     EditText searchTerm;
@@ -71,10 +76,44 @@ public class MainActivity extends AppCompatActivity {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                InfoArraySingleton newAsdf = InfoArraySingleton.getInstance();
-                String stFirst = newAsdf.getmInfoArray().get(0).getmName();
-                Log.d("asdfasf", stFirst);
-            }
+                //////////////////////////////////////////////////////////////////
+                InfoArraySingleton newYelp = InfoArraySingleton.getInstance();
+
+                ArrayList<InfoBussiness> arrayYelp = newYelp.getmInfoArray();
+                ///////////////You can get your data in for loop..
+
+                for(int i = 0; i < arrayYelp.size(); i++) {
+                    InfoBussiness eachBusiness = arrayYelp.get(i);
+
+                    String name = eachBusiness.getmName();
+                    String latitute = eachBusiness.getmLatitude().toString();
+                    String longtitute = eachBusiness.getmLongtitude().toString();
+                    String SNtext = eachBusiness.getmSNtext();
+                    String SNimageURL = eachBusiness.getmSNurl();
+                    String Rating_S_url = eachBusiness.getmRatingSurl();
+                    String Rating_M_url = eachBusiness.getmRatingMurl();
+                    String addressFull = eachBusiness.getmAddress();
+
+                    arrayName.add(name);
+                    arrayLatitute.add(latitute);
+                    arrayLongtitute.add(longtitute);
+                    arraySNtext.add(SNtext);
+                    arraySNimageURL.add(SNimageURL);
+                    arrayRating_S_URL.add(Rating_S_url);
+                    arrayRating_M_URL.add(Rating_M_url);
+                    arrayAddress.add(addressFull);
+                    arrayAll.add(name+": "+ SNtext + "///" + addressFull);
+
+                    Log.d("It's onClick View", name);
+                }//End of for loop
+
+
+                mListView = (ListView) findViewById(R.id.listView);
+                mAdapter = new ArrayAdapter<>(MainActivity.this
+                    , android.R.layout.simple_list_item_1, arrayAll);
+                mListView.setAdapter(mAdapter);
+
+            }//End of public void onClick(View v)
         });
 
     }
@@ -100,7 +139,6 @@ public class MainActivity extends AppCompatActivity {
 
                 ArrayList<Business> businesses = response.businesses();
                 int businesSize = businesses.size();
-                businessArray = new ArrayList<InfoBussiness>();
 
                 InfoArraySingleton newArraySingle = InfoArraySingleton.getInstance();
                 newArraySingle.removeAll();
@@ -109,30 +147,43 @@ public class MainActivity extends AppCompatActivity {
                 arrayLatitute.clear();
                 arrayLongtitute.clear();
                 arrayAll.clear();
+                arraySNtext.clear();
+                arraySNimageURL.clear();
+                arrayRating_S_URL.clear();
+                arrayRating_M_URL.clear();
+                arrayAddress.clear();
 
                 for (int i= 0; i < businesSize ;i ++) {
-
-                    InfoBussiness infoBussiness = new InfoBussiness();
-                    infoBussiness.setmName(businesses.get(i).name().toString());
-                    arrayName.add(businesses.get(i).name().toString());
+                    String stName = businesses.get(i).name().toString();
 
                     Coordinate coordinate = response.businesses().get(i).location().coordinate();
+
                     Double latitue = coordinate.latitude();
                     Double longtitue = coordinate.longitude();
+                    String stSNtext = businesses.get(i).snippetText();
+                    String stSNimageURL = businesses.get(i).snippetImageUrl();
+                    String stRatingSurl = businesses.get(i).ratingImgUrlSmall();
+                    String stRatingMurl = businesses.get(i).ratingImgUrl();
+                    String addressStreet = businesses.get(i).location().displayAddress().get(0);
+                    String addressCity = businesses.get(i).location().city();
+                    String addressState = businesses.get(i).location().stateCode();
+                    String addressZip = businesses.get(i).location().postalCode();
+                    String addressFull = addressStreet+" "+ addressCity+" "
+                            + addressState+" "+addressZip;
 
-                    arrayLatitute.add(latitue);
-                    arrayLongtitute.add(longtitue);
-
+                    InfoBussiness infoBussiness = new InfoBussiness();
+                    infoBussiness.setmName(stName);
                     infoBussiness.setmLatitude(latitue);
                     infoBussiness.setmLongtitude(longtitue);
-                    businessArray.add(infoBussiness);
-
-                    String stAll = businesses.get(i).name().toString()+ "/ Lat:"+latitue+"/ Long: "+ longtitue;
-                    arrayAll.add(stAll);
+                    infoBussiness.setmSNtext(stSNtext);
+                    infoBussiness.setmSNurl(stSNimageURL);
+                    infoBussiness.setmRatingSurl(stRatingSurl);
+                    infoBussiness.setmRatingMurl(stRatingMurl);
+                    infoBussiness.setmAddress(addressFull);
 
                     newArraySingle.addInstance(infoBussiness);
+
                 }
-                mAsdfArray = arrayName;
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -142,12 +193,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Void aVoid) {
-
-            InfoArraySingleton newArraySingleOne = InfoArraySingleton.getInstance();
-            mListView = (ListView) findViewById(R.id.listView);
-            mAdapter = new ArrayAdapter<>(MainActivity.this
-                    , android.R.layout.simple_list_item_1, arrayAll);
-            mListView.setAdapter(mAdapter);
 
         }
     }
