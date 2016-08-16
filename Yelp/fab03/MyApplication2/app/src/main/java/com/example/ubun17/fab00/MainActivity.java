@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> arrayName = new ArrayList<String>();
     ArrayList<Double> arrayLatitute = new ArrayList<Double>();
     ArrayList<Double> arrayLongtitute = new ArrayList<>();
+    ArrayList<String> arrayAll = new ArrayList<>();
 
     EditText searchTerm;
     Button buSearch;
@@ -51,19 +52,28 @@ public class MainActivity extends AppCompatActivity {
         YelpAPIFactory apiFactory = new YelpAPIFactory(consumerkey, consumerSecret, token, tokenSecret);
         yelpAPI = apiFactory.createAPI();
 
-        searchTerm = (EditText) findViewById(R.id.searchEdit);
-        String stSearch = searchTerm.getText().toString();
-
-        SearchTerm searchTerm = SearchTerm.getInstance();
-        searchTerm.setSearchTerm(stSearch);
-
-
         buSearch = (Button) findViewById(R.id.button);
+        searchTerm = (EditText) findViewById(R.id.searchEdit);
         buSearch.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+
+                String stSearch = searchTerm.getText().toString();
+
+                SearchTerm searchTerm = SearchTerm.getInstance();
+                searchTerm.setSearchTerm(stSearch);
+
                 YELPapiAsyncTask yelPapiAsyncTask = new YELPapiAsyncTask();
                 yelPapiAsyncTask.execute();
+
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                InfoArraySingleton newAsdf = InfoArraySingleton.getInstance();
+                String stFirst = newAsdf.getmInfoArray().get(0).getmName();
+                Log.d("asdfasf", stFirst);
             }
         });
 
@@ -80,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
 // general params
             SearchTerm searchTerm = SearchTerm.getInstance();
 
-            params.put("term", "japanese");
+            params.put("term", searchTerm.getmSearch());
             params.put("limit", "10");
 
             Call<SearchResponse> call = yelpAPI.search("new york", params);
@@ -93,8 +103,15 @@ public class MainActivity extends AppCompatActivity {
                 businessArray = new ArrayList<InfoBussiness>();
 
                 InfoArraySingleton newArraySingle = InfoArraySingleton.getInstance();
+                newArraySingle.removeAll();
+
+                arrayName.clear();
+                arrayLatitute.clear();
+                arrayLongtitute.clear();
+                arrayAll.clear();
 
                 for (int i= 0; i < businesSize ;i ++) {
+
                     InfoBussiness infoBussiness = new InfoBussiness();
                     infoBussiness.setmName(businesses.get(i).name().toString());
                     arrayName.add(businesses.get(i).name().toString());
@@ -108,15 +125,13 @@ public class MainActivity extends AppCompatActivity {
 
                     infoBussiness.setmLatitude(latitue);
                     infoBussiness.setmLongtitude(longtitue);
-                    Log.d("Name",infoBussiness.getmName());
-                    Log.d("Name", String.valueOf(latitue));
-                    Log.d("Name", String.valueOf(longtitue));
                     businessArray.add(infoBussiness);
 
-                    newArraySingle.addInstance(infoBussiness);
+                    String stAll = businesses.get(i).name().toString()+ "/ Lat:"+latitue+"/ Long: "+ longtitue;
+                    arrayAll.add(stAll);
 
+                    newArraySingle.addInstance(infoBussiness);
                 }
-                searchTerm.setSearchTerm(arrayName.get(1));
                 mAsdfArray = arrayName;
 
             } catch (IOException e) {
@@ -131,11 +146,9 @@ public class MainActivity extends AppCompatActivity {
             InfoArraySingleton newArraySingleOne = InfoArraySingleton.getInstance();
             mListView = (ListView) findViewById(R.id.listView);
             mAdapter = new ArrayAdapter<>(MainActivity.this
-                    , android.R.layout.simple_list_item_1, arrayName);
+                    , android.R.layout.simple_list_item_1, arrayAll);
             mListView.setAdapter(mAdapter);
 
-            Log.d("asdfasdfasasdfas",  newArraySingleOne.getmInfoArray().get(2).getmName());
-            Log.i("Test", "onPostExecute: "+  searchTerm.getText().toString());
         }
     }
 }
