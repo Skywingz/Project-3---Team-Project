@@ -10,14 +10,27 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.ubun17.nytimes.MainActivity">
 
-    <TextView
+    <EditText
+        android:id="@+id/searchEdit"
+        android:hint="Type the search term"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"/>
+        android:layout_height="wrap_content"/>
 
     <ListView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/listView"
-        ></ListView>
+        android:layout_below="@+id/searchEdit"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"></ListView>
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Search NYtimes"
+        android:id="@+id/button"
+        android:layout_alignParentTop="true"
+        android:layout_alignRight="@+id/listView"
+        android:layout_alignEnd="@+id/listView"/>
 </RelativeLayout>
