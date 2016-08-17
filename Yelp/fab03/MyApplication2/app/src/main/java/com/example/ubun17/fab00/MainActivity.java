@@ -104,13 +104,13 @@ public class MainActivity extends AppCompatActivity {
                     arrayAddress.add(addressFull);
                     arrayAll.add(name+": "+ SNtext + "///" + addressFull);
 
-                    Log.d("It's onClick View", name);
+                    Log.d("It's onClick View", SNtext);
                 }//End of for loop
 
 
                 mListView = (ListView) findViewById(R.id.listView);
                 mAdapter = new ArrayAdapter<>(MainActivity.this
-                    , android.R.layout.simple_list_item_1, arrayAll);
+                    , android.R.layout.simple_list_item_1, arrayName);
                 mListView.setAdapter(mAdapter);
 
             }//End of public void onClick(View v)
