@@ -162,7 +162,7 @@
             android:clipToPadding="true"
             app:behavior_hideable="true"
             app:behavior_skipCollapsed="true"
-            android:background="@color/blue_grey_500"
+            android:background="@color/white"
             app:layout_behavior="@string/bottom_sheet_behavior">
 
             <include layout="@layout/bottom_sheet_layout"/>

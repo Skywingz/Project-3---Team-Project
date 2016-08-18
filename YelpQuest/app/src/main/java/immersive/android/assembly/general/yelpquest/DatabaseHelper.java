@@ -16,7 +16,7 @@ import java.util.Set;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "immersive.android.assembly.general.yelpquest.database";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     private static final String TABLE_CURRENT_MARKERS = "table_current_markers";
     private static final String TABLE_DETAIL_OBJECTS = "table_detail_objects";
@@ -35,7 +35,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COL_UNLOCK_TIME = "column_unlock_time";
 
     // Columns for TABLE_DETAIL_OBJECTS
-    // TODO
+    private static final String COL_DETAIL_OBJECT_LATITUDE = "column_detail_object_latitude";
+    private static final String COL_DETAIL_OBJECT_LONGITUDE = "column_detail_object_longitude";
+    private static final String COL_DETAIL_OBJECT_BUSINESS_NAME = "column_detail_object_business_name";
+    private static final String COL_DETAIL_OBJECT_BUSINESS_ADDRESS = "column_detail_object_business_address";
+    private static final String COL_DETAIL_OBJECT_SNIPPET_TEXT = "column_detail_object_snippet_text";
+    private static final String COL_DETAIL_OBJECT_SNIPPET_URL = "column_detail_object_snippet_url";
+    private static final String COL_DETAIL_OBJECT_SMALL_RATING_URL = "column_detail_object_small_rating_url";
+    private static final String COL_DETAIL_OBJECT_MEDIUM_RATING_URL = "column_detail_object_medium_rating_url";
 
     // Columns for TABLE_QUEST_OBJECTS
     private static final String COL_START_TIME = "column_start_time";
@@ -67,6 +74,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     + COL_BUSINESS_NAME + " TEXT, "
                     + COL_BUSINESS_ADDRESS + " TEXT)";
 
+    private static final String CREATE_TABLE_DETAIL_OBJECTS =
+            "CREATE TABLE " + TABLE_DETAIL_OBJECTS + "("
+                    + COL_ID + " INTEGER PRIMARY KEY, "
+                    + COL_DETAIL_OBJECT_LATITUDE + " REAL, "
+                    + COL_DETAIL_OBJECT_LONGITUDE + " REAL, "
+                    + COL_DETAIL_OBJECT_BUSINESS_NAME + " TEXT, "
+                    + COL_DETAIL_OBJECT_BUSINESS_ADDRESS + " TEXT, "
+                    + COL_DETAIL_OBJECT_SNIPPET_TEXT + " TEXT, "
+                    + COL_DETAIL_OBJECT_SNIPPET_URL + " TEXT, "
+                    + COL_DETAIL_OBJECT_SMALL_RATING_URL + " TEXT, "
+                    + COL_DETAIL_OBJECT_MEDIUM_RATING_URL + " TEXT)";
+
     private static final String CREATE_TABLE_QUEST_OBJECTS =
             "CREATE TABLE " + TABLE_QUEST_OBJECTS + "("
                     + COL_ID + " INTEGER PRIMARY KEY, "
@@ -95,6 +114,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase database) {
         database.execSQL(CREATE_TABLE_CURRENT_MARKERS);
         database.execSQL(CREATE_TABLE_COMPLETED_QUEST_MARKERS);
+        database.execSQL(CREATE_TABLE_DETAIL_OBJECTS);
         database.execSQL(CREATE_TABLE_QUEST_OBJECTS);
     }
 
@@ -102,6 +122,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase database, int i, int i1) {
         database.execSQL("DROP TABLE IF EXISTS " + TABLE_CURRENT_MARKERS);
         database.execSQL("DROP TABLE IF EXISTS " + TABLE_COMPLETED_QUEST_MARKERS);
+        database.execSQL("DROP TABLE IF EXISTS " + TABLE_DETAIL_OBJECTS);
         database.execSQL("DROP TABLE IF EXISTS " + TABLE_QUEST_OBJECTS);
         onCreate(database);
     }
