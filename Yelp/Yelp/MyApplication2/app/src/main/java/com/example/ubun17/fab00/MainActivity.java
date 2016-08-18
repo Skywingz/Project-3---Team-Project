@@ -131,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
 
             params.put("term", searchTerm.getmSearch());
             params.put("limit", "10");
+            params.put("radius_filter", "1000");
+           // params.put("radius_filter", "10000");
 
             Call<SearchResponse> call = yelpAPI.search("new york", params);
 

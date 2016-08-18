@@ -61,7 +61,8 @@ public class TwitLogIn extends AppCompatActivity {
             @Override
             public void success(Result<TwitterSession> result) {
                 Toast.makeText(getApplicationContext(),
-                        getResources().getString(R.string.app_name),
+                        //getResources().getString(R.string.app_name),
+                        "Log in Success",
                         Toast.LENGTH_SHORT).show();
 
                 setUpViewsForTweetComposer();
@@ -70,8 +71,7 @@ public class TwitLogIn extends AppCompatActivity {
             @Override
             public void failure(TwitterException exception) {
                 Toast.makeText(getApplicationContext(),
-                        getResources().getString(R.string.app_name),
-                        Toast.LENGTH_SHORT).show();
+                       "Log in Failed", Toast.LENGTH_SHORT).show();
             }
         });
     }
