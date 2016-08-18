@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:cardView="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="12dp"
+    android:padding="12dp"
+    android:background="@drawable/yellow_border_bluegreen">
+
+    <TextView
+        android:id="@+id/fabPopupTimeframeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="6dp"
+        android:gravity="center"
+        android:text="TIME FRAME"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        android:textSize="24sp"/>
+
+    <LinearLayout
+        android:id="@+id/fabPopupTimeframeStartEnd"
+        android:orientation="horizontal"
+        android:layout_below="@+id/fabPopupTimeframeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="20dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="6dp"
+            android:gravity="center"
+            android:layout_weight="1"
+            android:text="Start"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="20dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="6dp"
+            android:gravity="center"
+            android:layout_weight="1"
+            android:text="End"
+            android:textSize="16sp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/fabPopupTimeframeLinearLayout"
+        android:orientation="horizontal"
+        android:layout_below="@+id/fabPopupTimeframeStartEnd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="18dp">
+
+        <Spinner
+            android:id="@+id/fabPopupStartTime"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="6dp"
+            android:background="@drawable/white_border_black"
+            android:gravity="center"
+            android:layout_weight="1"/>
+
+        <Spinner
+            android:id="@+id/fabPopupEndTime"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="6dp"
+            android:background="@drawable/white_border_black"
+            android:gravity="center"
+            android:layout_weight="1"/>
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/fabPopupInterestTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/fabPopupTimeframeLinearLayout"
+        android:layout_marginBottom="6dp"
+        android:gravity="center"
+        android:text="INTEREST"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        android:textSize="24sp"/>
+
+    <EditText
+        android:id="@+id/fabPopupInterestEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/fabPopupInterestTitle"
+        android:layout_marginBottom="18dp"
+        android:padding="6dp"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:textColorHint="@color/grey_300"
+        android:hint="key word to search for"
+        android:background="@drawable/black_border_thin_white"/>
+
+    <TextView
+        android:id="@+id/fabPopupIncludeFoodTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/fabPopupInterestEditText"
+        android:layout_marginBottom="6dp"
+        android:gravity="center"
+        android:text="INCLUDE FOOD?"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        android:textSize="24sp"/>
+
+    <LinearLayout
+        android:id="@+id/fabPopupIncludeFoodLinearLayout"
+        android:orientation="horizontal"
+        android:layout_below="@+id/fabPopupIncludeFoodTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="18dp">
+
+        <Spinner
+            android:id="@+id/fabPopupIncludeFoodYesNo"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="6dp"
+            android:background="@drawable/white_border_black"
+            android:gravity="center"
+            android:layout_weight="1"/>
+
+        <Spinner
+            android:id="@+id/fabPopupIncludeFoodType"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="6dp"
+            android:background="@drawable/white_border_black"
+            android:gravity="center"
+            android:layout_weight="1"/>
+
+    </LinearLayout>
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/fabPopupBeginQuestButton"
+        cardView:contentPadding="4dp"
+        cardView:cardCornerRadius="8dp"
+        cardView:cardElevation="4dp"
+        cardView:cardPreventCornerOverlap="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/fabPopupIncludeFoodLinearLayout"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center"
+        android:layout_marginTop="6dp"
+        android:foregroundGravity="center"
+        cardView:cardBackgroundColor="@color/green_500">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:padding="6dp"
+            android:text="BEGIN QUEST"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:textColor="@android:color/white"/>
+
+    </android.support.v7.widget.CardView>
+
+
+
+</RelativeLayout>
