@@ -34,6 +34,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -63,6 +64,7 @@ import com.yelp.clientlib.connection.YelpAPIFactory;
 import com.yelp.clientlib.entities.Business;
 import com.yelp.clientlib.entities.Coordinate;
 import com.yelp.clientlib.entities.SearchResponse;
+import com.yelp.clientlib.entities.options.CoordinateOptions;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,7 +85,8 @@ import retrofit2.Call;
 
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener, View.OnClickListener {
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+        GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener, View.OnClickListener {
 
 
     private SharedPreferences prefs;
@@ -101,7 +104,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private BottomSheetBehavior bottomSheetBehavior;
     private View bottomSheet;
     private RelativeLayout bottomSheetRelativeLayout;
-    private LinearLayout bottomSheetLinearLayout;
+    private TextView bottomSheetBusinessSummary;
+    private Button twitterShareButton;
 
 
     private HashMap<String, DetailObject> allQueryDetails;
@@ -154,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         topToolbar = (Toolbar) findViewById(R.id.topToolbar);
         botToolbar = (Toolbar) findViewById(R.id.botToolbar);
         questButton = (ImageView) findViewById(R.id.questButton);
+        twitterShareButton = (Button) findViewById(R.id.tweet_button);
 
         allQueryDetails = new HashMap<>();
         questDetails = new HashMap<>();
@@ -173,6 +178,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         filterFoodButton.setOnClickListener(this);
         filterCoffeeButton.setOnClickListener(this);
         filterBarsButton.setOnClickListener(this);
+
 
         bottomToolBarSelection = 0;
         showUndiscoveredLocationsOnly = false;
@@ -205,21 +211,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-        bottomSheetLinearLayout = (LinearLayout) findViewById(R.id.snippetViewLayout);
+        bottomSheetBusinessSummary = (TextView) findViewById(R.id.textview_business_summary);
         bottomSheetRelativeLayout = (RelativeLayout) findViewById(R.id.modalViewLayout);
         bottomSheetRelativeLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                bottomSheetBehavior.setPeekHeight(1050);
+                bottomSheetBehavior.setPeekHeight(bottomSheetRelativeLayout.getHeight());
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             }
         });
-        bottomSheetLinearLayout.setOnClickListener(new View.OnClickListener() {
+        bottomSheetBusinessSummary.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             }
         });
+
+        twitterShareButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, TwitterLogIn.class);
+                intent.putExtra("restaurant_name", arrayName.get(currentSelectedMarkerTag));
+                startActivity(intent);
+            }
+        });
+
+
 
         questButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -585,8 +602,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         TextView textViewSnippetReview = (TextView) findViewById(R.id.textview_business_summary);
         textViewSnippetReview.setText(arraySNtext.get(currentSelectedMarkerTag));
         //returns business summary to bottomsheet
-        ImageView ratingsImageSmall = (ImageView) findViewById(R.id.yelp_rating_imageSmall);
-        Picasso.with(getApplicationContext()).load(arrayRating_S_URL.get(currentSelectedMarkerTag)).into(ratingsImageSmall);
+//        ImageView ratingsImageSmall = (ImageView) findViewById(R.id.yelp_rating_imageSmall);
+//        Picasso.with(getApplicationContext()).load(arrayRating_S_URL.get(currentSelectedMarkerTag)).into(ratingsImageSmall);
         //returns image to bottomsheet
         ImageView ratingsImage = (ImageView) findViewById(R.id.yelp_rating_image);
         Picasso.with(getApplicationContext()).load(arrayRating_M_URL.get(currentSelectedMarkerTag)).into(ratingsImage);
@@ -595,7 +612,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Picasso.with(getApplicationContext()).load(arraySNimageURL.get(currentSelectedMarkerTag)).into(businessImage);
         //returns business summary to bottomsheet
 
-        bottomSheetBehavior.setPeekHeight(335);
+        bottomSheetBehavior.setPeekHeight(bottomSheetRelativeLayout.getHeight());
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
 
@@ -873,8 +890,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
 
-            LatLng lastMarkerPosition = new LatLng(markerLatitude, markerLongitude);
-            float zoomLevel = 18f;
+//            LatLng lastMarkerPosition = new LatLng(markerLatitude, markerLongitude);
+            LatLng lastMarkerPosition = new LatLng(currentLatitude, currentLongitude);
+            float zoomLevel = 15f;
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastMarkerPosition, zoomLevel));
         }
     }
@@ -1001,8 +1019,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private class YelpAPIAsyncTask extends AsyncTask<String, Void, Void> {
 
-        ArrayList<String> mAsdfArray;
-
         @Override
         protected Void doInBackground(String... strings) {
             Map<String, String> params = new HashMap<>();
@@ -1010,8 +1026,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             SearchTerm searchTerm = SearchTerm.getInstance();
             params.put("term", searchTerm.getmSearch());
             params.put("limit", "6");
+            params.put("radius_filter", "1000");
 
-            Call<SearchResponse> call = yelpAPI.search("new york", params); // Beta testing in New York first
+            CoordinateOptions userCoordinate = CoordinateOptions.builder()
+                    .latitude(currentLatitude)
+                    .longitude(currentLongitude).build();
+
+            Call<SearchResponse> call = yelpAPI.search(userCoordinate, params); // Beta testing in New York first
 
             try {
                 SearchResponse response = call.execute().body();
@@ -1039,7 +1060,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Double latitue = coordinate.latitude();
                     Double longtitue = coordinate.longitude();
                     String stSNtext = businesses.get(i).snippetText();
-                    String stSNimageURL = businesses.get(i).snippetImageUrl();
+                    String stSNimageURL = businesses.get(i).imageUrl();
                     String stRatingSurl = businesses.get(i).ratingImgUrlSmall();
                     String stRatingMurl = businesses.get(i).ratingImgUrl();
                     String addressStreet = businesses.get(i).location().displayAddress().get(0);
@@ -1048,7 +1069,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     String addressZip = businesses.get(i).location().postalCode();
                     String addressFull = addressStreet+" "+ addressCity+" "
                             + addressState+" "+addressZip;
-
+                    // TODO add marker tags
                     DetailObject infoBussiness = new DetailObject();
                     infoBussiness.setmName(stName);
                     infoBussiness.setmLatitude(latitue);
@@ -1127,6 +1148,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     Gson gson = new Gson();
                     final NYtimesResult nyTimesResult = gson.fromJson(stBody, NYtimesResult.class);
+                    // TODO check for array or object or null or empty
 
 //                    for(int i = 0; i<nyTimesResult.getResponse().getDocs().size(); i++){
 //                        String nytimesURL = nyTimesResult.getResponse().getDocs().get(i).getWebUrl();
