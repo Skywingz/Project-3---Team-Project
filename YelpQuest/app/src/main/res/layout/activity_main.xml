@@ -21,6 +21,20 @@
        app:layout_collapseMode="pin"
        app:theme="@style/ThemeOverlay.AppCompat.ActionBar"
        app:popupTheme="@style/AppTheme.PopupOverlay">
+
+       <LinearLayout
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content">
+
+           <ImageView
+               android:layout_width="80dp"
+               android:layout_height="wrap_content"
+               android:src="@drawable/yelp_logo"/>
+
+       </LinearLayout>
+
+
+
    </android.support.v7.widget.Toolbar>
 
    <android.support.v7.widget.Toolbar

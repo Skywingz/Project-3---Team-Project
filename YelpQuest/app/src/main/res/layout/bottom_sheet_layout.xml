@@ -79,13 +79,15 @@
                 android:textStyle="bold"
                 android:textSize="16sp"
                 android:textColor="@color/yellow_500"
-                android:background="@drawable/yellow_border_green"/>
+                android:background="@drawable/yellow_border_green"
+                android:visibility="invisible"/>
 
             <Button
                 android:id="@+id/tweet_button"
                 android:layout_width="90sp"
                 android:layout_height="40sp"
                 android:background="@drawable/tweet_button"
+                android:visibility="gone"
                 />
 
         </LinearLayout>
@@ -137,8 +139,9 @@
         android:textStyle="bold"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:gravity="center_horizontal"
         android:paddingLeft="16dp"
-        android:text="@string/NYT_Title"
+        android:text="New York Times Article"
         android:textColor="@color/black"/>
 
     <!--<TextView-->
@@ -164,7 +167,7 @@
         android:id="@+id/newyorktimes_article"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/newYorkTimesQuery"
+        android:text="(article not found)"
         android:textStyle="italic"
         android:textSize="14sp"
         android:paddingRight="16dp"
