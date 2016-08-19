@@ -16,7 +16,7 @@ import java.util.Set;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "immersive.android.assembly.general.yelpquest.database";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     private static final String TABLE_CURRENT_MARKERS = "table_current_markers";
     private static final String TABLE_DETAIL_OBJECTS = "table_detail_objects";
@@ -35,6 +35,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COL_UNLOCK_TIME = "column_unlock_time";
 
     // Columns for TABLE_DETAIL_OBJECTS
+    private static final String COL_DETAIL_OBJECT_MARKER_TAG = "column_detail_object_marker_tag";
     private static final String COL_DETAIL_OBJECT_LATITUDE = "column_detail_object_latitude";
     private static final String COL_DETAIL_OBJECT_LONGITUDE = "column_detail_object_longitude";
     private static final String COL_DETAIL_OBJECT_BUSINESS_NAME = "column_detail_object_business_name";
@@ -77,6 +78,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String CREATE_TABLE_DETAIL_OBJECTS =
             "CREATE TABLE " + TABLE_DETAIL_OBJECTS + "("
                     + COL_ID + " INTEGER PRIMARY KEY, "
+                    + COL_DETAIL_OBJECT_MARKER_TAG + " TEXT, "
                     + COL_DETAIL_OBJECT_LATITUDE + " REAL, "
                     + COL_DETAIL_OBJECT_LONGITUDE + " REAL, "
                     + COL_DETAIL_OBJECT_BUSINESS_NAME + " TEXT, "
@@ -127,6 +129,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(database);
     }
 
+
+
+
     public HashMap<String, MarkerObject> getAllCurrentMarkers() {
         SQLiteDatabase db = getReadableDatabase();
         Cursor cursor = db.query(TABLE_CURRENT_MARKERS, null, null, null, null, null, null, null);
@@ -148,6 +153,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return map;
+    }
+
+    public ArrayList<DetailObject> getAllDetailObjects() {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(TABLE_DETAIL_OBJECTS, null, null, null, null, null, null, null);
+        ArrayList<DetailObject> list = new ArrayList<>();
+
+        if (cursor.moveToFirst()) {
+            while(!cursor.isAfterLast()) {
+                DetailObject detail = new DetailObject();
+                detail.setmMarkerTag(cursor.getString(cursor.getColumnIndex(COL_DETAIL_OBJECT_MARKER_TAG)));
+                detail.setmName(cursor.getString(cursor.getColumnIndex(COL_DETAIL_OBJECT_BUSINESS_NAME)));
+                detail.setmLatitude(cursor.getDouble(cursor.getColumnIndex(COL_DETAIL_OBJECT_LATITUDE)));
+                detail.setmLongtitude(cursor.getDouble(cursor.getColumnIndex(COL_DETAIL_OBJECT_LONGITUDE)));
+                detail.setmSNtext(cursor.getString(cursor.getColumnIndex(COL_DETAIL_OBJECT_SNIPPET_TEXT)));
+                detail.setmSNurl(cursor.getString(cursor.getColumnIndex(COL_DETAIL_OBJECT_SNIPPET_URL)));
+                detail.setmRatingSurl(cursor.getString(cursor.getColumnIndex(COL_DETAIL_OBJECT_SMALL_RATING_URL)));
+                detail.setmRatingMurl(cursor.getString(cursor.getColumnIndex(COL_DETAIL_OBJECT_MEDIUM_RATING_URL)));
+                detail.setmAddress(cursor.getString(cursor.getColumnIndex(COL_DETAIL_OBJECT_BUSINESS_ADDRESS)));
+                list.add(detail);
+
+                cursor.moveToNext();
+            }
+        }
+
+        cursor.close();
+        db.close();
+        return list;
     }
 
     public ArrayList<CompletedQuestMarkerObjects> getAllCompletedQuestMarkerObjects() {
@@ -188,7 +221,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return quest;
     }
 
-    public void addCurrentMarkers(HashMap<String, MarkerObject> map) {
+    public void saveCurrentMarkers(HashMap<String, MarkerObject> map) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
 
@@ -203,23 +236,35 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             values.put(COL_ON_QUEST_BOOLEAN, Boolean.toString(map.get(key).isOnQuest()));
             values.put(COL_MARKER_STATUS, map.get(key).getMarkerStatus());
             values.put(COL_UNLOCK_TIME, map.get(key).getUnlockTime());
+            db.insert(TABLE_CURRENT_MARKERS, null, values);
             values.clear();
         }
 
         db.close();
     }
 
-    public void addCompletedQuestMarkerObjects(CompletedQuestMarkerObjects completed) {
+    public void saveDetailObjects(ArrayList<DetailObject> details) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COL_LATITUDE, completed.getLatitude());
-        values.put(COL_LONGITUDE, completed.getLongitude());
-        values.put(COL_BUSINESS_NAME, completed.getBusinessName());
-        values.put(COL_BUSINESS_ADDRESS, completed.getBusinessAddress());
+
+        for (DetailObject detail : details) {
+            values.put(COL_DETAIL_OBJECT_MARKER_TAG, detail.getmMarkerTag());
+            values.put(COL_DETAIL_OBJECT_LATITUDE, detail.getmLatitude());
+            values.put(COL_DETAIL_OBJECT_LONGITUDE, detail.getmLongtitude());
+            values.put(COL_DETAIL_OBJECT_BUSINESS_NAME, detail.getmName());
+            values.put(COL_DETAIL_OBJECT_BUSINESS_ADDRESS, detail.getmAddress());
+            values.put(COL_DETAIL_OBJECT_SNIPPET_TEXT, detail.getmSNtext());
+            values.put(COL_DETAIL_OBJECT_SNIPPET_URL, detail.getmSNurl());
+            values.put(COL_DETAIL_OBJECT_SMALL_RATING_URL, detail.getmRatingSurl());
+            values.put(COL_DETAIL_OBJECT_MEDIUM_RATING_URL, detail.getmRatingMurl());
+            db.insert(TABLE_DETAIL_OBJECTS, null, values);
+            values.clear();
+        }
+
         db.close();
     }
 
-    public void addQuestObject(QuestObject quest) {
+    public void saveQuestObject(QuestObject quest) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_START_TIME, quest.getStartTime());
@@ -228,6 +273,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_QUERY_INTEREST, quest.getQueryInterest());
         values.put(COL_INCLUDE_FOOD_BOOLEAN, Boolean.toString(quest.isIncludeFood()));
         values.put(COL_FOOD_TYPE, quest.getFoodType());
+        db.insert(TABLE_QUEST_OBJECTS, null, values);
+        db.close();
+    }
+
+    public void addCompletedQuestMarkerObject(CompletedQuestMarkerObjects completed) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_LATITUDE, completed.getLatitude());
+        values.put(COL_LONGITUDE, completed.getLongitude());
+        values.put(COL_BUSINESS_NAME, completed.getBusinessName());
+        values.put(COL_BUSINESS_ADDRESS, completed.getBusinessAddress());
+        db.insert(TABLE_COMPLETED_QUEST_MARKERS, null, values);
+        db.close();
+    }
+
+    public void updateMarkerStatus(String tag) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(COL_MARKER_STATUS, 5);
+        db.update(TABLE_CURRENT_MARKERS, values, COL_MARKER_TAG + " =?", new String[]{tag});
+
         db.close();
     }
 

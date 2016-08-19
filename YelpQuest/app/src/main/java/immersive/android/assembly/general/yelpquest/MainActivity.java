@@ -3,6 +3,8 @@ package immersive.android.assembly.general.yelpquest;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
 import android.app.SearchManager;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -67,10 +69,12 @@ import com.yelp.clientlib.entities.SearchResponse;
 import com.yelp.clientlib.entities.options.CoordinateOptions;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 
@@ -88,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener, View.OnClickListener {
 
+    private static final String TAG = "MainActivity";
 
     private SharedPreferences prefs;
     private static final String SHARED_PREFS_NAME = "yelp_quest_shared_preferences";
@@ -106,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private RelativeLayout bottomSheetRelativeLayout;
     private TextView bottomSheetBusinessSummary;
     private Button twitterShareButton;
+    private Button completeQuestButton;
 
 
     private HashMap<String, DetailObject> allQueryDetails;
@@ -116,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private QuestObject currentQuest;
     private String queryString;
     private String currentSelectedMarkerTag;
+    private int totalQuestHours;
 
 
     private TextView undiscoveredButton, filterFoodButton, filterCoffeeButton, filterBarsButton;
@@ -159,6 +166,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         botToolbar = (Toolbar) findViewById(R.id.botToolbar);
         questButton = (ImageView) findViewById(R.id.questButton);
         twitterShareButton = (Button) findViewById(R.id.tweet_button);
+        completeQuestButton = (Button) findViewById(R.id.completeQuestButton);
 
         allQueryDetails = new HashMap<>();
         questDetails = new HashMap<>();
@@ -166,8 +174,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         markers = new HashMap<>();
         completedMarkerObjects = new ArrayList<>();
         currentQuest = null;
-        queryString = "";
+        queryString = null;
         currentSelectedMarkerTag = null;
+        totalQuestHours = 0;
 
         bottomSheet = findViewById(R.id.bottom_sheet);
         undiscoveredButton = (TextView) findViewById(R.id.undiscoveredButton);
@@ -201,8 +210,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
-                if (newState == BottomSheetBehavior.STATE_COLLAPSED){
+                if (newState == BottomSheetBehavior.STATE_COLLAPSED) { // || newState == BottomSheetBehavior.STATE_HIDDEN){
                     bottomSheetBehavior.setPeekHeight(0);
+//                    if (markerIsSelected) {
+//                        onMapClick(null);
+//                    }
                 }
             }
 
@@ -224,6 +236,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View view) {
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        });
+
+        completeQuestButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                CompletedQuestMarkerObjects completedObject = new CompletedQuestMarkerObjects(
+                        arrayLatitute.get(currentSelectedMarkerTag), arrayLongtitute.get(currentSelectedMarkerTag),
+                        arrayName.get(currentSelectedMarkerTag), arrayAddress.get(currentSelectedMarkerTag));
+                markerDetails.get(currentSelectedMarkerTag).setMarkerStatus(5);
+                Toast.makeText(MainActivity.this, "Congratulations, you completed a quest!", Toast.LENGTH_SHORT).show();
+                completeQuestButton.setVisibility(View.GONE);
+                twitterShareButton.setVisibility(View.VISIBLE);
+                new CompletedQuestAsyncTask().execute(completedObject);
             }
         });
 
@@ -254,9 +280,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     final Spinner includeFoodType = (Spinner) dialogView.findViewById(R.id.fabPopupIncludeFoodType);
 
                     ArrayAdapter<CharSequence> startTimeArray =
-                            ArrayAdapter.createFromResource(MainActivity.this, R.array.start_time, android.R.layout.simple_spinner_dropdown_item);
+                            ArrayAdapter.createFromResource(MainActivity.this, R.array.time, android.R.layout.simple_spinner_dropdown_item);
                     ArrayAdapter<CharSequence> endTimeArray =
-                            ArrayAdapter.createFromResource(MainActivity.this, R.array.end_time, android.R.layout.simple_spinner_dropdown_item);
+                            ArrayAdapter.createFromResource(MainActivity.this, R.array.time, android.R.layout.simple_spinner_dropdown_item);
                     ArrayAdapter<CharSequence> includeFoodArray =
                             ArrayAdapter.createFromResource(MainActivity.this, R.array.include_food, android.R.layout.simple_spinner_dropdown_item);
                     ArrayAdapter<CharSequence> includeFoodTypeArray =
@@ -265,6 +291,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     endTime.setAdapter(endTimeArray);
                     includeFood.setAdapter(includeFoodArray);
                     includeFoodType.setAdapter(includeFoodTypeArray);
+                    includeFood.setEnabled(false);
+                    includeFoodType.setEnabled(false);
 
                     int currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
                     startTime.setSelection(currentHour);
@@ -281,13 +309,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     beginQuest.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            if (searchInput.getText().toString().trim().length() <= 0 && includeFood.getSelectedItem().toString().equals("NO")) {
+                            Boolean includeFoodWithQuest = false;
+                            if (includeFood.getSelectedItem().toString().equals("YES")){
+                                includeFoodWithQuest = true;
+                            }
+
+                            if (searchInput.getText().toString().trim().length() <= 0 && !includeFoodWithQuest) {
                                 searchInput.setError("This field cannot be blank.");
                             } else {
                                 createNewQuest(searchInput.getText().toString(),
                                         startTime.getSelectedItem().toString(), endTime.getSelectedItem().toString(),
-                                        Boolean.parseBoolean(includeFood.getSelectedItem().toString()),
-                                        includeFoodType.getSelectedItem().toString());
+                                        includeFoodWithQuest, includeFoodType.getSelectedItem().toString());
+
+                                JobInfo jobInfo = new JobInfo.Builder(1, new ComponentName(getPackageName(),
+                                        Notifications.class.getName()))
+                                        .setOverrideDeadline(10000)
+                                        .setPersisted(false)
+                                        .build();
+                                Log.i(TAG, "onClick: 10 second count ");
+                                JobScheduler jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+                                jobScheduler.schedule(jobInfo);
 
                                 dialog.dismiss();
                             }
@@ -410,7 +451,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             queryString = query;
             SearchTerm.getInstance().setSearchTerm(queryString);
-
             new CompletedQuestMarkersAsyncTask().execute();
 //            queryMapLocations(query);
         }
@@ -549,15 +589,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (markerIsSelected) {
 
+            markerIsSelected = false;
+
             markers.get(currentSelectedMarkerTag);
             setMarkerIcon(markers.get(currentSelectedMarkerTag), markerDetails.get(currentSelectedMarkerTag).getMarkerStatus());
             questButton.setVisibility(View.VISIBLE);
 
+            bottomSheetBehavior.setPeekHeight(0);
             bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
+            completeQuestButton.setVisibility(View.INVISIBLE);
+            twitterShareButton.setVisibility(View.GONE);
+
+            Log.i(TAG, "On QUEST: " + prefs.getBoolean(PREFS_CURRENTLY_ON_QUEST, false));
             if (!prefs.getBoolean(PREFS_CURRENTLY_ON_QUEST, false)) {
                 topToolbar.setVisibility(View.VISIBLE);
                 botToolbar.setVisibility(View.VISIBLE);
+            } else {
+                topToolbar.setVisibility(View.VISIBLE);
+                topToolbar.setVisibility(View.GONE);
             }
         }
 
@@ -567,8 +617,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onMarkerClick(Marker marker) {
 
         markerIsSelected = true;
-
-        new NYTimesAsyncTask().execute();
 
         if (currentSelectedMarkerTag == null) {
             currentSelectedMarkerTag = (String)marker.getTag();
@@ -582,12 +630,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         topToolbar.setVisibility(View.GONE);
         botToolbar.setVisibility(View.GONE);
 
+        Log.i(TAG, "On QUEST: " + prefs.getBoolean(PREFS_CURRENTLY_ON_QUEST, false));
         MarkerObject selectedMarker = markerDetails.get(currentSelectedMarkerTag);
         if (prefs.getBoolean(PREFS_CURRENTLY_ON_QUEST, false)
-                && selectedMarker.getMarkerStatus() != 2 && selectedMarker.getMarkerStatus() != 5
-                && isUserCloseToQuestNode(selectedMarker)) {
+                && selectedMarker.getMarkerStatus() != 2 && selectedMarker.getMarkerStatus() != 5) {
+//                && isUserCloseToQuestNode(selectedMarker)) {
 
-//            completeQuestButton.setVisibility(View.VISIBLE); // TODO show the completeQuestButton
+            twitterShareButton.setVisibility(View.GONE);
+            completeQuestButton.setVisibility(View.VISIBLE);
+
+        } else if (prefs.getBoolean(PREFS_CURRENTLY_ON_QUEST, false)) {
+
+            twitterShareButton.setVisibility(View.VISIBLE);
+            completeQuestButton.setVisibility(View.GONE);
 
         }
 
@@ -611,13 +666,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         ImageView businessImage = (ImageView) findViewById(R.id.imageview_business);
         Picasso.with(getApplicationContext()).load(arraySNimageURL.get(currentSelectedMarkerTag)).into(businessImage);
         //returns business summary to bottomsheet
+        TextView distance = (TextView) findViewById(R.id.textview_distance);
+        LatLng fromLocation = new LatLng(currentLatitude, currentLongitude);
+        LatLng toLocation = new LatLng(markerDetails.get(currentSelectedMarkerTag).getLatitude(),
+                markerDetails.get(currentSelectedMarkerTag).getLongitude());
+        double distanceMeters = Math.abs(SphericalUtil.computeDistanceBetween(fromLocation, toLocation));
+        double distanceMiles = distanceMeters / 1609.344;
+        DecimalFormat roundDec = new DecimalFormat("#.#");
+        String miles = String.format("%.1f", Double.valueOf(roundDec.format(distanceMiles)));
+        distance.setText(miles + " mi");
 
         bottomSheetBehavior.setPeekHeight(bottomSheetRelativeLayout.getHeight());
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
-
-
-
+        new NYTimesAsyncTask().execute();
 
 
         // Return false to indicate that we have not consumed the event and that we wish
@@ -654,11 +716,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 
+
     private class NYTimesAsyncTask extends AsyncTask<Void, Void, ArrayList<String>> {
 
         @Override
         protected ArrayList<String> doInBackground(Void... voids) {
-            String finalAPIstring = baseURL + arrayName.get(currentSelectedMarkerTag) + "&sort=newest&&api-key=" + nyAPIkey;
+            String businessName = arrayName.get(currentSelectedMarkerTag);
+            businessName = businessName.replaceAll(" ", "%20");
+            String finalAPIstring = baseURL + businessName + "&sort=newest&&api-key=" + nyAPIkey;
             Log.d("url : ", finalAPIstring);
             return returnAPIcall(finalAPIstring);
         }
@@ -709,14 +774,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         @Override
         protected HashMap<String, DetailObject> doInBackground(Void... voids) {
-//            return DatabaseHelper.getInstance(MainActivity.this).getAllDetailObjects(); // TODO code the DB method
-            return null;
+            ArrayList<DetailObject> details = DatabaseHelper.getInstance(MainActivity.this).getAllDetailObjects();
+            HashMap<String, DetailObject> mapDetailObjects = new HashMap<>();
+            if (!details.isEmpty()) {
+                for (DetailObject detail : details) {
+                    mapDetailObjects.put(detail.getmMarkerTag(), detail);
+                }
+            }
+            return mapDetailObjects;
         }
 
         @Override
         protected void onPostExecute(HashMap<String, DetailObject> stringDetailObjectHashMap) {
             questDetails = stringDetailObjectHashMap;
-            updateScreenMarkers();
+            initializeArrayHashMaps();
+//            updateScreenMarkers();
         }
     }
 
@@ -732,23 +804,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         protected void onPostExecute(ArrayList<CompletedQuestMarkerObjects> completedObjects) {
             completedMarkerObjects = completedObjects;
 //            new QueryLocationsAsyncTask().execute(queryString);
-            new YelpAPIAsyncTask().execute();
+            new YelpAPIAsyncTask().execute("general");
         }
     }
 
-//    private class QueryLocationsAsyncTask extends AsyncTask<String, Void, ArrayList<DetailObject>> {
-//
-//        @Override
-//        protected ArrayList<DetailObject> doInBackground(String... strings) {
-////            new YelpAPIAsyncTask().execute();
-////            return APIHELPER.getDetailObjects(strings[0]); // TODO sync with API Helper
-//            return null;
-//        }
-//        @Override
-//        protected void onPostExecute(ArrayList<DetailObject> detailObjects) {
-//            queryMapLocations(detailObjects);
-//        }
-//    }
+    private class StartQuestCheckAsyncTask extends AsyncTask<Void, Void, ArrayList<CompletedQuestMarkerObjects>> {
+
+        @Override
+        protected void onPreExecute() {completedMarkerObjects.clear();}
+        @Override
+        protected ArrayList<CompletedQuestMarkerObjects> doInBackground(Void... strings) {
+            return DatabaseHelper.getInstance(MainActivity.this).getAllCompletedQuestMarkerObjects();}
+        @Override
+        protected void onPostExecute(ArrayList<CompletedQuestMarkerObjects> completedObjects) {
+            completedMarkerObjects = completedObjects;
+//            new QueryLocationsAsyncTask().execute(queryString);
+            new YelpAPIAsyncTask().execute("quest");
+        }
+    }
 
     private class CancelQuestAsyncTask extends AsyncTask<Void, Void, Void> {
 
@@ -756,6 +829,55 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         protected Void doInBackground(Void... voids) {
             DatabaseHelper.getInstance(MainActivity.this).cancelQuest();
             return null;
+        }
+    }
+
+    private class CompletedQuestAsyncTask extends AsyncTask<CompletedQuestMarkerObjects, Void, Void> {
+
+        String tag;
+
+        @Override
+        protected void onPreExecute() {
+            this.tag = currentSelectedMarkerTag;
+        }
+
+        @Override
+        protected Void doInBackground(CompletedQuestMarkerObjects... completedQuestMarkerObject) {
+            DatabaseHelper.getInstance(MainActivity.this).addCompletedQuestMarkerObject(completedQuestMarkerObject[0]);
+            DatabaseHelper.getInstance(MainActivity.this).updateMarkerStatus(tag);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+
+            int count = 0;
+            Set<String> questKeys = questDetails.keySet();
+            for (String questkey : questKeys) {
+                for (int i = 0; i < markerDetails.size(); i++) {
+                    if (markerDetails.get(questkey).getMarkerStatus() == 2 || markerDetails.get(questkey).getMarkerStatus() == 5) {
+                        count++;
+                        break;
+                    }
+                }
+            }
+            if (count == questDetails.size()) {
+                final View dialogView = LayoutInflater.from(MainActivity.this).inflate(R.layout.popup_all_quests_completed, null);
+                final TextView doneButton = (TextView) dialogView.findViewById(R.id.allQuestCompletedPopupDoneButton);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setView(dialogView);
+                final AlertDialog dialog = builder.create();
+
+                doneButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        dialog.dismiss();
+                    }
+                });
+
+                dialog.show();
+            }
         }
     }
 
@@ -775,22 +897,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void queryMapLocations() {
-
-        // TODO query Yelp apis
-        // TODO clear HashMap of Marker Objects and update
-        // TODO clear Details Objects and update
-
-
+    private void queryMapLocations(String string) {
 
         ArrayList<DetailObject> apiQuery = YelpAPIHelper.getInstance().getmInfoArray();
 
         allQueryDetails.clear();
         markerDetails.clear();
-//        ArrayList<DetailObject> apiQuery = APIHELPER.getDetailObjects(query);
         if (!apiQuery.isEmpty()) {
-//            ArrayList<CompletedQuestMarkerObjects> completedMarkerObjects =
-//                    DatabaseHelper.getInstance(MainActivity.this).getAllCompletedQuestMarkerObjects();
             int tagCount = 1;
             for (DetailObject detail : apiQuery) {
                 String newTag = Integer.toString(tagCount);
@@ -818,6 +931,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 markerDetails.put(newTag, newMarkerObject);
 
+                detail.setmMarkerTag(newTag);
                 arrayName.put(newTag, detail.getmName());
                 arrayLatitute.put(newTag, detail.getmLatitude());
                 arrayLongtitute.put(newTag, detail.getmLongtitude());
@@ -830,31 +944,78 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 tagCount++;
             }
 
-            updateScreenMarkers();
+            if (string.equals("general")) {
+                updateScreenMarkers();
+            } else if (string.equals("quest")) {
+                questDetails.clear();
+                HashMap<String, DetailObject> tempQuestHolder = new HashMap<>();
+                ArrayList<String> newKeys = new ArrayList<>();
+
+                if (!allQueryDetails.isEmpty()) {
+                    Set<String> keys = allQueryDetails.keySet();
+                    for (String key : keys) {
+                        boolean isCompleted = false;
+                        DetailObject tempDetail = allQueryDetails.get(key);
+                        for (CompletedQuestMarkerObjects completed : completedMarkerObjects) {
+                            if (completed.getBusinessName().equals(tempDetail.getmName())
+                                    && completed.getLatitude() == tempDetail.getmLatitude()
+                                    && completed.getLongitude() == tempDetail.getmLongtitude()) {
+                                isCompleted = true;
+                                break;
+                            }
+                        }
+                        if (!isCompleted) {
+                            newKeys.add(key);
+                            tempQuestHolder.put(key, tempDetail);
+                        }
+                    }
+                }
+
+                Log.i(TAG, "COMPLETED MARKERS: " + completedMarkerObjects.size());
+                Log.i(TAG, "ALL QUERY DETAILS: " + allQueryDetails.size());
+                Log.i(TAG, "TEMP HOLDER: " + tempQuestHolder.size());
+                if (tempQuestHolder.size() <= totalQuestHours) {
+                    questDetails.putAll(tempQuestHolder);
+                } else {
+                    while (newKeys.size() > totalQuestHours) {
+                        Random rand = new Random();
+                        newKeys.remove(rand.nextInt(newKeys.size()));
+                    }
+
+                    for (String key : newKeys) {
+                        questDetails.put(key, tempQuestHolder.get(key));
+                    }
+
+                }
+
+                updateQuestMarkers();
+            }
+
+
         } else {
             Toast.makeText(MainActivity.this, "Search returned empty results", Toast.LENGTH_SHORT).show();
         }
+    }
 
+    private void initializeArrayHashMaps() {
 
+        Set<String> keys = questDetails.keySet();
 
+        for (String key : keys) {
+            arrayName.put(key, questDetails.get(key).getmName());
+            arrayLatitute.put(key, questDetails.get(key).getmLatitude());
+            arrayLongtitute.put(key, questDetails.get(key).getmLongtitude());
+            arraySNtext.put(key, questDetails.get(key).getmSNtext());
+            arraySNimageURL.put(key, questDetails.get(key).getmSNurl());
+            arrayRating_S_URL.put(key, questDetails.get(key).getmRatingSurl());
+            arrayRating_M_URL.put(key, questDetails.get(key).getmRatingMurl());
+            arrayAddress.put(key, questDetails.get(key).getmAddress());
+        }
+
+        updateScreenMarkers();
     }
 
     private void updateScreenMarkers() {
-
-        // TODO TESTING CODE
-//        markerDetails.clear();
-//        MarkerObject mark1 = new MarkerObject("1", currentLatitude + 0.0001, currentLongitude + 0.0001, "Fake", "Fake Street", false, 1, "");
-//        MarkerObject mark2 = new MarkerObject("2", currentLatitude - 0.0001, currentLongitude - 0.0001, "Fake", "Fake Street", false, 1, "");
-//        MarkerObject mark3 = new MarkerObject("3", currentLatitude + 0.00015, currentLongitude + 0.00015, "Fake", "Fake Street", false, 2, "");
-//        MarkerObject mark4 = new MarkerObject("4", currentLatitude - 0.00015, currentLongitude + 0.00015, "Fake", "Fake Street", false, 1, "");
-//        MarkerObject mark5 = new MarkerObject("5", currentLatitude + 0.0002, currentLongitude - 0.0002, "Fake", "Fake Street", false, 2, "");
-//        markerDetails.put("1", mark1);
-//        markerDetails.put("2", mark2);
-//        markerDetails.put("3", mark3);
-//        markerDetails.put("4", mark4);
-//        markerDetails.put("5", mark5);
-        // TODO TESTING CODE
-
 
         mMap.clear();
         markers.clear();
@@ -876,6 +1037,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                         markers.put(key, newMarker);
                         dropMarker(newMarker, mMap);
+                        Log.i(TAG, "UPDATE SCREEN MARKERS: " + key);
                     }
                 } else {
                     markerLatitude = markerDetails.get(key).getLatitude();
@@ -887,23 +1049,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     markers.put(key, newMarker);
                     dropMarker(newMarker, mMap);
+                    Log.i(TAG, "UPDATE SCREEN MARKERS: " + key);
                 }
             }
 
 //            LatLng lastMarkerPosition = new LatLng(markerLatitude, markerLongitude);
             LatLng lastMarkerPosition = new LatLng(currentLatitude, currentLongitude);
-            float zoomLevel = 15f;
+            float zoomLevel = 14f;
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastMarkerPosition, zoomLevel));
         }
     }
 
     private void updateQuestMarkers() {
 
-        // TODO Check if HashMap of Marker Objects is empty or not
-
 //        if (questDetails.isEmpty() && allQueryDetails.isEmpty()) { // query returned empty results
 
-        if (questDetails.isEmpty()) { // query returned results but quest completed on all of them
+        if (allQueryDetails.isEmpty() || (questDetails.size() < totalQuestHours && allQueryDetails.size() > questDetails.size())) { // query returned results less than needed for quest
             final View dialogView = LayoutInflater.from(MainActivity.this).inflate(R.layout.popup_query_no_results, null);
             final TextView secondaryText = (TextView) dialogView.findViewById(R.id.noResultsPopupText2);
             final TextView cancelButton = (TextView) dialogView.findViewById(R.id.noResultsPopupCancelButton);
@@ -916,11 +1077,43 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (allQueryDetails.isEmpty()) {
                 secondaryText.setVisibility(View.INVISIBLE);
                 yesButton.setVisibility(View.GONE);
-            } else {
+            } else if (allQueryDetails.size() > questDetails.size()) {
                 yesButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        questDetails.putAll(allQueryDetails);
+
+                        if (allQueryDetails.size() <= totalQuestHours) {
+                            questDetails.clear();
+                            questDetails.putAll(allQueryDetails);
+                        } else {
+                            if (questDetails.size() > 0) {
+                                Set<String> questKeys = questDetails.keySet();
+
+                                for (String key : questKeys) {
+                                    allQueryDetails.remove(key);
+                                }
+
+                                Set<String> remainingKeys = allQueryDetails.keySet();
+                                ArrayList<String> keyHolder = new ArrayList<>();
+                                keyHolder.addAll(remainingKeys);
+                                while (questDetails.size() < totalQuestHours) {
+                                    String key = keyHolder.get(0);
+                                    questDetails.put(key, allQueryDetails.get(key));
+                                    keyHolder.remove(0);
+                                }
+
+                            } else {
+                                Set<String> remainingKeys = allQueryDetails.keySet();
+                                ArrayList<String> keyHolder = new ArrayList<>();
+                                keyHolder.addAll(remainingKeys);
+                                while (questDetails.size() < totalQuestHours) {
+                                    String key = keyHolder.get(0);
+                                    questDetails.put(key, allQueryDetails.get(key));
+                                    keyHolder.remove(0);
+                                }
+                            }
+                        }
+
                         updateQuestMarkers();
                         dialog.dismiss();
                     }
@@ -939,12 +1132,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
         } else { // both hashmaps have items
-            // TODO clear current markers and marker Hashmap first
-            // TODO set Markers according to Quest status
-            // TODO use ClusterManager for many popups
-            // TODO hide top toolbars and change FAB to "X"
 
-            prefs.edit().putBoolean("PREFS_CURRENTLY_ON_QUEST", Boolean.TRUE).commit();
+            // TODO start job scheduler and notifications
+            // TODO
+            // TODO
+
+
+            prefs.edit().putBoolean(PREFS_CURRENTLY_ON_QUEST, Boolean.TRUE).commit();
+
+            mMap.clear();
+            markers.clear();
+            currentSelectedMarkerTag = null;
+
+            Set<String> keys = questDetails.keySet();
+
+            for (String key : keys) {
+                double markerLatitude = markerDetails.get(key).getLatitude();
+                double markerLongitude = markerDetails.get(key).getLongitude();
+                LatLng markerLocation = new LatLng(markerLatitude, markerLongitude);
+                Marker newMarker = mMap.addMarker(new MarkerOptions().position(markerLocation));
+                newMarker.setTag(key);
+                setMarkerIcon(newMarker, markerDetails.get(key).getMarkerStatus());
+
+                markers.put(key, newMarker);
+                dropMarker(newMarker, mMap);
+            }
+
             questButton.setImageResource(R.drawable.cancel_icon);
             topToolbar.setVisibility(View.GONE);
             botToolbar.setVisibility(View.GONE);
@@ -963,34 +1176,74 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             queryString = "";
             currentSelectedMarkerTag = null;
 
+
+            LatLng lastMarkerPosition = new LatLng(currentLatitude, currentLongitude);
+            float zoomLevel = 14f;
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastMarkerPosition, zoomLevel));
+
+            new SaveNewQuestAsyncTask().execute();
+
         }
 
 
     }
 
     private void createNewQuest(String query, String startTime, String endTime, boolean includeFood, String foodType) {
-        // TODO query Yelp API and create Quest
-        // TODO check if query is empty, foodtype is ANY
-        // TODO save Quest Object and MarkerObjects and DetailObjects to Database
+        totalQuestHours = 0;
+        int starttime = getTimeAsInt(startTime);
+        int endtime = getTimeAsInt(endTime);
+        if (endtime == starttime) {
+            totalQuestHours = 24;
+        } else if (endtime > starttime) {
+            totalQuestHours = endtime - starttime;
+        } else if (endtime < starttime) {
+            totalQuestHours = (24 - starttime) + endtime;
+        }
 
-        // TODO create quest object here
+        currentQuest = new QuestObject(starttime, endtime, "Quest time is up!", query, includeFood, foodType);
 
+        queryString = query;
+        SearchTerm.getInstance().setSearchTerm(query);
+        new StartQuestCheckAsyncTask().execute();
 
+//        updateQuestMarkers();
+    }
 
-//        currentQuest = new QuestObject(startTime, endTime, "Quest time is up!", query, includeFood, foodType);
-
-
-        updateQuestMarkers();
-
-
-
+    private int getTimeAsInt(String time) {
+        switch(time) {
+            default:
+            case "12:00am": return 0;
+            case "1:00am": return 1;
+            case "2:00am": return 2;
+            case "3:00am": return 3;
+            case "4:00am": return 4;
+            case "5:00am": return 5;
+            case "6:00am": return 6;
+            case "7:00am": return 7;
+            case "8:00am": return 8;
+            case "9:00am": return 9;
+            case "10:00am": return 10;
+            case "11:00am": return 11;
+            case "12:00pm": return 12;
+            case "1:00pm": return 13;
+            case "2:00pm": return 14;
+            case "3:00pm": return 15;
+            case "4:00pm": return 16;
+            case "5:00pm": return 17;
+            case "6:00pm": return 18;
+            case "7:00pm": return 19;
+            case "8:00pm": return 20;
+            case "9:00pm": return 21;
+            case "10:00pm": return 22;
+            case "11:00pm": return 23;
+        }
     }
 
     private void cancelQuest() {
 
         new CancelQuestAsyncTask().execute();
 
-        prefs.edit().putBoolean("PREFS_CURRENTLY_ON_QUEST", Boolean.FALSE).commit();
+        prefs.edit().putBoolean(PREFS_CURRENTLY_ON_QUEST, Boolean.FALSE).commit();
         questButton.setImageResource(R.drawable.quest_icon);
         topToolbar.setVisibility(View.VISIBLE);
         botToolbar.setVisibility(View.VISIBLE);
@@ -1003,6 +1256,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         markers.clear();
         completedMarkerObjects.clear();
         currentQuest = null;
+        totalQuestHours = 0;
+        queryString = null;
 
     }
 
@@ -1017,20 +1272,73 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 
-    private class YelpAPIAsyncTask extends AsyncTask<String, Void, Void> {
+    private class SaveNewQuestAsyncTask extends AsyncTask<Void, Void, Void> {
+
+        HashMap<String, MarkerObject> questMarkerObjects;
+        HashMap<String, DetailObject> questDetailObjects;
+        QuestObject quest;
 
         @Override
-        protected Void doInBackground(String... strings) {
-            Map<String, String> params = new HashMap<>();
+        protected void onPreExecute() {
+            this.quest = currentQuest;
+            this.questMarkerObjects = markerDetails;
+            this.questDetailObjects = questDetails;
+        }
 
+        @Override
+        protected Void doInBackground(Void... voids) {
+            DatabaseHelper.getInstance(MainActivity.this).cancelQuest();
+            ArrayList<DetailObject> details = new ArrayList<>();
+            HashMap<String, MarkerObject> tempMarkerObjects = new HashMap<>();
+            Set<String> keys = questDetailObjects.keySet();
+            for (String key : keys) {
+                details.add(questDetailObjects.get(key));
+                tempMarkerObjects.put(key, questMarkerObjects.get(key));
+            }
+
+            DatabaseHelper.getInstance(MainActivity.this).saveQuestObject(quest);
+            DatabaseHelper.getInstance(MainActivity.this).saveDetailObjects(details);
+            DatabaseHelper.getInstance(MainActivity.this).saveCurrentMarkers(tempMarkerObjects);
+
+            return null;
+        }
+    }
+
+    private class YelpAPIAsyncTask extends AsyncTask<String, Void, String> {
+
+        ArrayList<CompletedQuestMarkerObjects> completedObjects;
+//        QuestObject activeQuest;
+        int questHours;
+
+        @Override
+        protected void onPreExecute() {
+            this.completedObjects = completedMarkerObjects;
+//            this.activeQuest = currentQuest;
+            this.questHours = totalQuestHours;
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+
+            Map<String, String> params = new HashMap<>();
             SearchTerm searchTerm = SearchTerm.getInstance();
             params.put("term", searchTerm.getmSearch());
-            params.put("limit", "6");
-            params.put("radius_filter", "1000");
+            params.put("radius_filter", "1500");
+
+            if (strings[0].equals("general")) {
+                params.put("limit", "10");
+            } else if (strings[0].equals("quest")) {
+                params.put("limit", "20");
+            }
+
+            Log.i(TAG, "SEARCH TERM: "+ searchTerm.getmSearch());
 
             CoordinateOptions userCoordinate = CoordinateOptions.builder()
                     .latitude(currentLatitude)
                     .longitude(currentLongitude).build();
+
+            Log.i(TAG, "LATITUDE: "+ currentLatitude);
+            Log.i(TAG, "LONGITUDE: "+ currentLongitude);
 
             Call<SearchResponse> call = yelpAPI.search(userCoordinate, params); // Beta testing in New York first
 
@@ -1053,12 +1361,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 arrayAddress.clear();
 
                 for (int i = 0; i < businessSize; i++) {
+                    Log.i(TAG, "BUSINESSE: " + i);
+
                     String stName = businesses.get(i).name().toString();
 
                     Coordinate coordinate = response.businesses().get(i).location().coordinate();
 
-                    Double latitue = coordinate.latitude();
-                    Double longtitue = coordinate.longitude();
+                    Double latitude = coordinate.latitude();
+                    Double longitude = coordinate.longitude();
                     String stSNtext = businesses.get(i).snippetText();
                     String stSNimageURL = businesses.get(i).imageUrl();
                     String stRatingSurl = businesses.get(i).ratingImgUrlSmall();
@@ -1069,58 +1379,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     String addressZip = businesses.get(i).location().postalCode();
                     String addressFull = addressStreet+" "+ addressCity+" "
                             + addressState+" "+addressZip;
-                    // TODO add marker tags
-                    DetailObject infoBussiness = new DetailObject();
-                    infoBussiness.setmName(stName);
-                    infoBussiness.setmLatitude(latitue);
-                    infoBussiness.setmLongtitude(longtitue);
-                    infoBussiness.setmSNtext(stSNtext);
-                    infoBussiness.setmSNurl(stSNimageURL);
-                    infoBussiness.setmRatingSurl(stRatingSurl);
-                    infoBussiness.setmRatingMurl(stRatingMurl);
-                    infoBussiness.setmAddress(addressFull);
 
-                    newArraySingle.addInstance(infoBussiness);
+                    DetailObject infoBusiness = new DetailObject();
+                    infoBusiness.setmName(stName);
+                    infoBusiness.setmLatitude(latitude);
+                    infoBusiness.setmLongtitude(longitude);
+                    infoBusiness.setmSNtext(stSNtext);
+                    infoBusiness.setmSNurl(stSNimageURL);
+                    infoBusiness.setmRatingSurl(stRatingSurl);
+                    infoBusiness.setmRatingMurl(stRatingMurl);
+                    infoBusiness.setmAddress(addressFull);
+
+                    newArraySingle.addInstance(infoBusiness);
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return null;
+            return strings[0];
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-//            YelpAPIHelper newYelp = YelpAPIHelper.getInstance();
-//
-//            ArrayList<DetailObject> arrayYelp = newYelp.getmInfoArray();
-//
-//            for(int i = 0; i < arrayYelp.size(); i++) {
-//                DetailObject eachBusiness = arrayYelp.get(i);
-//
-//                String name = eachBusiness.getmName();
-//                String latitute = eachBusiness.getmLatitude().toString();
-//                String longtitute = eachBusiness.getmLongtitude().toString();
-//                String SNtext = eachBusiness.getmSNtext();
-//                String SNimageURL = eachBusiness.getmSNurl();
-//                String Rating_S_url = eachBusiness.getmRatingSurl();
-//                String Rating_M_url = eachBusiness.getmRatingMurl();
-//                String addressFull = eachBusiness.getmAddress();
-//
-//                arrayName.add(name);
-//                arrayLatitute.add(latitute);
-//                arrayLongtitute.add(longtitute);
-//                arraySNtext.add(SNtext);
-//                arraySNimageURL.add(SNimageURL);
-//                arrayRating_S_URL.add(Rating_S_url);
-//                arrayRating_M_URL.add(Rating_M_url);
-//                arrayAddress.add(addressFull);
-//
-//                Log.d("It's onClick View", name);
-//            }
-
-
-            queryMapLocations();
+        protected void onPostExecute(String string) {
+            queryMapLocations(string);
         }
     }
 
@@ -1146,31 +1427,61 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 } else {
                     String stBody = response.body().string();
 
-                    Gson gson = new Gson();
-                    final NYtimesResult nyTimesResult = gson.fromJson(stBody, NYtimesResult.class);
-                    // TODO check for array or object or null or empty
-
 //                    for(int i = 0; i<nyTimesResult.getResponse().getDocs().size(); i++){
 //                        String nytimesURL = nyTimesResult.getResponse().getDocs().get(i).getWebUrl();
 //                        String snippet = nyTimesResult.getResponse().getDocs().get(i).getSnippet();
 ////                        String lead_paragraph = nyTimesResult.getResponse().getDocs().get(i).getLeadParagraph();
 //                    }
 
-//                    nyTimesData.add(nyTimesResult.getResponse().getDocs().get(i).getWebUrl());
-//                    nyTimesData.add(nyTimesResult.getResponse().getDocs().get(i).getSnippet());
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TextView title = (TextView) findViewById(R.id.newyorktimes_title);
-                            TextView body = (TextView) findViewById(R.id.newyorktimes_article);
-                            title.setText(nyTimesResult.getResponse().getDocs().get(0).getWebUrl());
-                            body.setText(nyTimesResult.getResponse().getDocs().get(0).getSnippet());
+                    Gson gson = new Gson();
+//                    final NYtimesResult nyTimesResult = gson.fromJson(stBody, NYtimesResult.class);
+//
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            TextView title = (TextView) findViewById(R.id.newyorktimes_title);
+//                            TextView body = (TextView) findViewById(R.id.newyorktimes_article);
+//                            title.setText(nyTimesResult.getResponse().getDocs().get(0).getWebUrl());
+//                            body.setText(nyTimesResult.getResponse().getDocs().get(0).getSnippet());
+//                        }
+//                    });
+                    try {
+                        final NYtimesResult nyTimesResult = gson.fromJson(stBody, NYtimesResult.class);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!nyTimesResult.getResponse().getDocs().isEmpty()) {
+                                    TextView title = (TextView) findViewById(R.id.newyorktimes_title);
+                                    TextView body = (TextView) findViewById(R.id.newyorktimes_article);
+                                    title.setText(nyTimesResult.getResponse().getDocs().get(0).getWebUrl());
+                                    body.setText(nyTimesResult.getResponse().getDocs().get(0).getSnippet());
+                                }
+                            }
+                        });
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                        try {
+                            final NYtimesResult[] nyTimesResult = gson.fromJson(stBody, NYtimesResult[].class);
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!nyTimesResult[0].getResponse().getDocs().isEmpty()) {
+                                        TextView title = (TextView) findViewById(R.id.newyorktimes_title);
+                                        TextView body = (TextView) findViewById(R.id.newyorktimes_article);
+                                        title.setText(nyTimesResult[0].getResponse().getDocs().get(0).getWebUrl());
+                                        body.setText(nyTimesResult[0].getResponse().getDocs().get(0).getSnippet());
+                                    }
+                                }
+                            });
+                        } catch(Exception ex) {
+                            ex.printStackTrace();
                         }
-                    });
+                    }
 
-//                    nyTimesData.add(nyTimesResult.getResponse().getDocs().get(0).getWebUrl());
-//                    nyTimesData.add(nyTimesResult.getResponse().getDocs().get(0).getSnippet());
+
 
                 }
             }
@@ -1273,67 +1584,84 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     protected void onStop() {
         mGoogleApiClient.disconnect();
+        queryString = null;
+        bottomToolBarSelection = 0;
+
+        undiscoveredButton.setBackgroundResource(R.drawable.circle_white_border_grey);
+        undiscoveredButton.setTextColor(Color.parseColor("#FFFFFF"));
+        showUndiscoveredLocationsOnly = false;
+
+        filterCoffeeButton.setBackgroundResource(R.drawable.white_border_transparent);
+        filterCoffeeButton.setTextColor(Color.parseColor("#FFFFFF"));
+        filterFoodButton.setBackgroundResource(R.drawable.white_border_transparent);
+        filterFoodButton.setTextColor(Color.parseColor("#FFFFFF"));
+        filterBarsButton.setBackgroundResource(R.drawable.white_border_transparent);
+        filterBarsButton.setTextColor(Color.parseColor("#FFFFFF"));
+
         super.onStop();
     }
 
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
 
+        showUndiscoveredLocationsOnly = savedInstanceState.getBoolean("show_discovered_locations_only");
+        if (showUndiscoveredLocationsOnly) {
+            undiscoveredButton.setBackgroundResource(R.drawable.circle_yellow_border_black);
+            undiscoveredButton.setTextColor(Color.parseColor("#FFEB3B"));
+        } else {
+            undiscoveredButton.setBackgroundResource(R.drawable.circle_white_border_grey);
+            undiscoveredButton.setTextColor(Color.parseColor("#FFFFFF"));
+        }
+        bottomToolBarSelection = savedInstanceState.getInt("bottom_toolbar");
 
+        switch(bottomToolBarSelection) {
+            case 1:
+                filterFoodButton.setBackgroundResource(R.drawable.yellow_border_black);
+                filterFoodButton.setTextColor(Color.parseColor("#FFEB3B"));
+                break;
+            case 2:
+                filterCoffeeButton.setBackgroundResource(R.drawable.yellow_border_black);
+                filterCoffeeButton.setTextColor(Color.parseColor("#FFEB3B"));
+                break;
+            case 3:
+                filterBarsButton.setBackgroundResource(R.drawable.yellow_border_black);
+                filterBarsButton.setTextColor(Color.parseColor("#FFEB3B"));
+                break;
+            default: break;
+        }
 
+        currentLatitude = savedInstanceState.getDouble("saved_latitude");
+        currentLongitude = savedInstanceState.getDouble("saved_longitude");
+        if (!prefs.getBoolean(PREFS_CURRENTLY_ON_QUEST, false)) {
+            queryString = savedInstanceState.getString("query_string_key");
+            if (queryString != null) {
+                SearchTerm.getInstance().setSearchTerm(queryString);
+                new CompletedQuestMarkersAsyncTask().execute();
+            }
+        }
+        Log.i(TAG, "onRestoreInstanceState: " + queryString);
 
+    }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (ContextCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
+            Toast.makeText(MainActivity.this, "Requires Permissions", Toast.LENGTH_SHORT).show();
+        }
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        currentLatitude = mLastLocation.getLatitude();
+        currentLongitude = mLastLocation.getLongitude();
 
-
-
-
-
-
-
-
-
-
-
-
-    // TODO track user location
-//    protected void createLocationRequest() {
-//        LocationRequest mLocationRequest = new LocationRequest();
-//        mLocationRequest.setInterval(10000);
-//        mLocationRequest.setFastestInterval(5000);
-//        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//
-//        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest);
-//        final PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient, builder.build());
-//        result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
-//            @Override
-//            public void onResult(@NonNull LocationSettingsResult locationSettingsResult) {
-//                final Status status = result.getStatus();
-//                final LocationSettingsStates = result.getLocationSettingsStates();
-//                switch (status.getStatusCode()) {
-//                    case LocationSettingsStatusCodes.SUCCESS:
-//                        // All location settings are satisfied. The client can
-//                        // initialize location requests here.
-//                        break;
-//                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-//                        // Location settings are not satisfied, but this can be fixed
-//                        // by showing the user a dialog.
-//                        try {
-//                            // Show the dialog by calling startResolutionForResult(),
-//                            // and check the result in onActivityResult().
-//                            status.startResolutionForResult(
-//                                    MainActivity.this,
-//                                    REQUEST_CHECK_SETTINGS);
-//                        } catch (IntentSender.SendIntentException e) {
-//                            e.printStackTrace();
-//                        }
-//                        break;
-//                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-//                        // Location settings are not satisfied. However, we have no way
-//                        // to fix the settings so we won't show the dialog.
-//
-//                        break;
-//                }
-//            }
-//        });
-//    }
-
+        outState.putBoolean("show_discovered_locations_only", showUndiscoveredLocationsOnly);
+        outState.putInt("bottom_toolbar", bottomToolBarSelection);
+        outState.putString("query_string_key", queryString);
+        outState.putDouble("saved_latitude", currentLatitude);
+        outState.putDouble("saved_longitude", currentLongitude);
+        super.onSaveInstanceState(outState);
+    }
 }

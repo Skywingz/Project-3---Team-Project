@@ -5,11 +5,15 @@ package immersive.android.assembly.general.yelpquest;
  */
 public class DetailObject {
 
-    private String mName, mSNtext, mSNurl, mRatingSurl, mRatingMurl, mAddress;
+
+    private String mMarkerTag, mName, mSNtext, mSNurl, mRatingSurl, mRatingMurl, mAddress;
     private Double mLatitude, mLongtitude;
 
     public DetailObject() {}
 
+    public String getmMarkerTag() {
+        return mMarkerTag;
+    }
     public String getmName() {return mName;}
     public Double getmLatitude() {return mLatitude;}
     public Double getmLongtitude() {return mLongtitude;}
@@ -19,6 +23,9 @@ public class DetailObject {
     public String getmRatingMurl() {return mRatingMurl;}
     public String getmAddress() {return mAddress;}
 
+    public void setmMarkerTag(String mMarkerTag) {
+        this.mMarkerTag = mMarkerTag;
+    }
     public void setmName(String str) {mName = str;}
     public void setmLatitude(Double num) {mLatitude = num;}
     public void setmLongtitude(Double num) {mLongtitude = num;}
