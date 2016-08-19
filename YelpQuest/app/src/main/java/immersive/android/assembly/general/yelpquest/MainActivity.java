@@ -3,6 +3,8 @@ package immersive.android.assembly.general.yelpquest;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
 import android.app.SearchManager;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -18,9 +20,11 @@ import android.os.Bundle;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
@@ -87,6 +91,8 @@ import retrofit2.Call;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener, View.OnClickListener {
+
+    private static final String TAG = "MainActivity";
 
 
     private SharedPreferences prefs;
@@ -288,8 +294,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                         startTime.getSelectedItem().toString(), endTime.getSelectedItem().toString(),
                                         Boolean.parseBoolean(includeFood.getSelectedItem().toString()),
                                         includeFoodType.getSelectedItem().toString());
+                                Log.i(TAG, "onClick: questdialog");
+
+                                JobInfo jobInfo = new JobInfo.Builder(1, new ComponentName(getPackageName(),
+                                        Notifications.class.getName()))
+                                        .setOverrideDeadline(10000)
+                                        .setPersisted(false)
+                                        .build();
+                                Log.i(TAG, "onClick: 10 second count ");
+                                JobScheduler jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+                                jobScheduler.schedule(jobInfo);
 
                                 dialog.dismiss();
+
+
                             }
                         }
                     });
