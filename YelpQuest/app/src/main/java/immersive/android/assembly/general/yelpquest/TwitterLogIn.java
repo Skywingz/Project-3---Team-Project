@@ -19,9 +19,9 @@ import com.twitter.sdk.android.tweetcomposer.TweetComposer;
 import io.fabric.sdk.android.Fabric;
 
 public class TwitterLogIn extends AppCompatActivity {
-    // Note: Your consumer key and secret should be obfuscated in your source code before shipping.
-    private static final String TWITTER_KEY = "4JfTt2fo1Oc0UAXwjLBSRbJFK";
-    private static final String TWITTER_SECRET = "pBWfE8prKnvJBVSftbGSYJ96hgHpaE3uZ3kL0jYAdRf6LSg2nZ";
+    // NOTE: Enter your own keys and codes
+    private static final String TWITTER_KEY = "???";
+    private static final String TWITTER_SECRET = "???";
     private TwitterLoginButton twitterButton;
     private String restaurantName;
 
@@ -65,7 +65,7 @@ public class TwitterLogIn extends AppCompatActivity {
             @Override
             public void success(Result<TwitterSession> result) {
                 Toast.makeText(getApplicationContext(),
-                        //getResources().getString(R.string.app_name),
+
                         "Log in Success",
                         Toast.LENGTH_SHORT).show();
 

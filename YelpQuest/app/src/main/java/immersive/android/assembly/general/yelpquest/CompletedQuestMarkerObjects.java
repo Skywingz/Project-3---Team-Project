@@ -1,8 +1,6 @@
 package immersive.android.assembly.general.yelpquest;
 
-/**
- * Created by Skywingz on 8/17/16.
- */
+
 public class CompletedQuestMarkerObjects {
 
     private double latitude;

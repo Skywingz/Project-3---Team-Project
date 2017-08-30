@@ -14,11 +14,10 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.os.Bundle;
 import android.support.design.widget.BottomSheetBehavior;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -39,8 +38,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -76,7 +73,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 
 import immersive.android.assembly.general.yelpquest.NYTimes.NYtimesResult;
 import okhttp3.Callback;
@@ -141,16 +137,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     HashMap<String, String> arrayRating_S_URL = new HashMap<>();
     HashMap<String, String> arrayRating_M_URL = new HashMap<>();
     HashMap<String, String> arrayAddress = new HashMap<>();
-//    ArrayList<String> arrayName = new ArrayList<String>();
-//    ArrayList<String> arrayLatitute = new ArrayList<String>();
-//    ArrayList<String> arrayLongtitute = new ArrayList<>();
-//    ArrayList<String> arraySNtext = new ArrayList<>();
-//    ArrayList<String> arraySNimageURL = new ArrayList<>();
-//    ArrayList<String> arrayRating_S_URL = new ArrayList<>();
-//    ArrayList<String> arrayRating_M_URL = new ArrayList<>();
-//    ArrayList<String> arrayAddress = new ArrayList<>();
-    String nyAPIkey = "48c66fa2c448eda40826487d4f19a018:0:71658152";
-    String baseURL = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=";
+
+    // NOTE: Enter your own keys and urls
+    String nyAPIkey = "???";
+    String baseURL = "???";
 
 
 
@@ -210,11 +200,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
-                if (newState == BottomSheetBehavior.STATE_COLLAPSED) { // || newState == BottomSheetBehavior.STATE_HIDDEN){
+                if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
                     bottomSheetBehavior.setPeekHeight(0);
-//                    if (markerIsSelected) {
-//                        onMapClick(null);
-//                    }
                 }
             }
 
@@ -452,7 +439,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             queryString = query;
             SearchTerm.getInstance().setSearchTerm(queryString);
             new CompletedQuestMarkersAsyncTask().execute();
-//            queryMapLocations(query);
+
         }
     }
 
@@ -487,7 +474,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     queryString = "food";
                     SearchTerm.getInstance().setSearchTerm(queryString);
                     new CompletedQuestMarkersAsyncTask().execute();
-//                    queryMapLocations("food");
+
                 }
                 break;
             case R.id.filterCoffeeButton:
@@ -506,7 +493,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     queryString = "coffee";
                     SearchTerm.getInstance().setSearchTerm(queryString);
                     new CompletedQuestMarkersAsyncTask().execute();
-//                    queryMapLocations("coffee");
+
                 }
                 break;
             case R.id.filterBarsButton:
@@ -525,7 +512,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     queryString = "bars";
                     SearchTerm.getInstance().setSearchTerm(queryString);
                     new CompletedQuestMarkersAsyncTask().execute();
-//                    queryMapLocations("bars");
+
                 }
                 break;
             default: break;
@@ -548,8 +535,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         public float getInterpolation(float time) {
-//            double amplitude = mAmplitude;
-//            if (amplitude == 0) { amplitude = 0.05; }
             return (float) (-1 * Math.pow(Math.E, -time/ mAmplitude) * Math.cos(mFrequency * time) + 1);
         }
     }
@@ -561,7 +546,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Point startPoint = projection.toScreenLocation(finalPosition);
         startPoint.y = 0;
         final LatLng startLatLng = projection.fromScreenLocation(startPoint);
-        final Interpolator interpolator = new MyBounceInterpolator(0.1, 10); //(0.11, 4.6);
+        final Interpolator interpolator = new MyBounceInterpolator(0.1, 10);
 
         TypeEvaluator<LatLng> typeEvaluator = new TypeEvaluator<LatLng>() {
             @Override
@@ -729,17 +714,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         @Override
-        protected void onPostExecute(ArrayList<String> data) {
-//            if (data == null || data.isEmpty()) {
-//                TextView title = (TextView) findViewById(R.id.newyorktimes_title);
-//                TextView body = (TextView) findViewById(R.id.newyorktimes_article);
-//                TextView date = (TextView) findViewById(R.id.newyorktimes_date);
-//
-//                date.setText(Integer.toString(data.size()));
-//                title.setText(data.get(0));
-//                body.setText(data.get(1));
-//            }
-        }
+        protected void onPostExecute(ArrayList<String> data) {}
     }
 
     private class InitialQuestObjectAsyncTask extends AsyncTask<Void, Void, QuestObject> {
@@ -803,7 +778,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         protected void onPostExecute(ArrayList<CompletedQuestMarkerObjects> completedObjects) {
             completedMarkerObjects = completedObjects;
-//            new QueryLocationsAsyncTask().execute(queryString);
             new YelpAPIAsyncTask().execute("general");
         }
     }
@@ -1053,7 +1027,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
 
-//            LatLng lastMarkerPosition = new LatLng(markerLatitude, markerLongitude);
             LatLng lastMarkerPosition = new LatLng(currentLatitude, currentLongitude);
             float zoomLevel = 14f;
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastMarkerPosition, zoomLevel));
@@ -1206,7 +1179,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         SearchTerm.getInstance().setSearchTerm(query);
         new StartQuestCheckAsyncTask().execute();
 
-//        updateQuestMarkers();
     }
 
     private int getTimeAsInt(String time) {
@@ -1307,13 +1279,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private class YelpAPIAsyncTask extends AsyncTask<String, Void, String> {
 
         ArrayList<CompletedQuestMarkerObjects> completedObjects;
-//        QuestObject activeQuest;
         int questHours;
 
         @Override
         protected void onPreExecute() {
             this.completedObjects = completedMarkerObjects;
-//            this.activeQuest = currentQuest;
             this.questHours = totalQuestHours;
         }
 

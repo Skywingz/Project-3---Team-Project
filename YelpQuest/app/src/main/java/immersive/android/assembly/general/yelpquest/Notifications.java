@@ -15,9 +15,7 @@ import android.util.Log;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
-/**
- * Created by raymour on 8/12/16.
- */
+
 public class Notifications extends JobService {
     private static final String TAG = "Notifications";
     AsyncTask<Void, Void, NotificationCompat.Builder> mTask;

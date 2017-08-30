@@ -1,8 +1,6 @@
 package immersive.android.assembly.general.yelpquest;
 
-/**
- * Created by raymour on 8/17/16.
- */
+
 public class DetailObject {
 
 

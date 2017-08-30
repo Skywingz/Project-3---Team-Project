@@ -1,31 +1,37 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project #3
+## Intro
 
-#### Overview
+Uses Google Map, Twitter, and Yelp API's.
 
-During Project 3, ADI students will work in groups to design and build an application that meets a set of technical and design specifications. Each set of specifications has been provided by the Android team at a real company--the idea is for students to work as part of a team on a real-world challenge. Each group of students will be assigned a project from the following list of project briefs:  
+## Instructions for Use:
 
-* [New York Times](NewYorkTimes)
-* [Vice](Vice)
-* [TouchLab](TouchLab)
-* [Yelp](Yelp)
+- Tap search icon to search for anything, app will return 10 related businesses close to the current user position and add a marker.
+- Tap the "Food," "Coffee," and "Bars" icons to quicklt search for 10 related businesses.
+- Tap a marker on the map to show a sneek peek of the bottom sheet with minor details about the business.
+- Tap the peeking bottom sheet to expand the entire height showing extended business details including the address, review and NYTimes articles.
+- Tap the Quest Button to open a popup where you can enter information to start a quest.
+- In quest mode, tapping the markers while you are within 8ft of the GPS location will allow you to complete the quest node.
+- After tapping "Complete Quest," a Twitter button will appear where you can send a tweet after authentication.
+- Tap the "X" button to abandon quest.
+- Back on the main screen, when you enter a search term there is a chance yellow markers will show up, these indicate completed quest locations, tap the "?" to toggle between showing the completed nodes or not.
 
-Multiple groups will be assigned to the same project brief--these projects have been designed to be fairly open-ended and will allow for a great deal of creativity with regard to design, implementation and interaction. Students will have two weeks to work on this project. Please see the individual project briefs for more information on project requirements.
 
----
 
-#### Code of Conduct
+## Screenshots
 
-As always, your app must adhere to General Assembly's [student code of conduct guidelines](https://github.com/ga-adi-nyc/Course-Materials/blob/master/markdown/code-of-conduct.md).
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-01.png" width="300"/>
 
-If you have questions about whether or not your work adheres to these guidelines, please speak with a member of your instructional team.
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-02.png" width="300"/>
 
----
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-03.png" width="300"/>
 
-#### Team & Project Assignments
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-04.png" width="300"/>
 
-* Jae Anonas, Jason Chan, Stacy Zolnikov - [NYT](NewYorkTimes)
-* Eric Kivet, James Rondina, Jonathan Taylor - [NYT](NewYorkTimes)
-* Sunil Kumar, Alice Lubic, Anders Palm - [TouchLab](TouchLab)
-* Zachary Arden, James DeLayo, Jane Grissom - [Vice](Vice)
-* Jimmy Choy, Wansang Lim, Raymour Radhakrishnan - [Yelp] (Yelp)
-* Jordan Goldberg, Joey Mejias, David Stone - [Yelp](Yelp)
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-05.png" width="300"/>
+
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-06.png" width="300"/>
+
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-07.png" width="300"/>
+
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-08.png" width="300"/>
+
+<img src="screenshots/FFBE-Ecomerce-App-Screenshot-09.png" width="300"/>

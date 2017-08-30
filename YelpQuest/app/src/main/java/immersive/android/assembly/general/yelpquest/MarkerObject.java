@@ -1,8 +1,6 @@
 package immersive.android.assembly.general.yelpquest;
 
-/**
- * Created by Skywingz on 8/16/16.
- */
+
 public class MarkerObject {
 
     private String markerTag;
@@ -11,9 +9,7 @@ public class MarkerObject {
     private String businessName;
     private String businessAddress;
     private boolean onQuest;
-    private int markerStatus;   // 1 = Undiscovered(red) ; 2 = Discovered(yellow) ; 3 = Selected(green)
-                                // 4 = Quest New(cyan) ; 5 = Quest Completed(yellow) ; 6 = Quest Selected(green)
-                                // 7 = Quest Completion Available(violet)
+    private int markerStatus;
     private String unlockTime;
 
 

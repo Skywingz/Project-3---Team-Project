@@ -2,9 +2,7 @@ package immersive.android.assembly.general.yelpquest;
 
 import java.util.ArrayList;
 
-/**
- * Created by raymour on 8/17/16.
- */
+
 public class YelpAPIHelper {
     private static YelpAPIHelper infoArraySingleton = null;
     private static ArrayList<DetailObject> mInfoArray;
